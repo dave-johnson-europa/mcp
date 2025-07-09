@@ -11,6 +11,9 @@ from fastapi.responses import RedirectResponse
 import os
 from pathlib import Path
 
+from fastapi import Query
+from typing import Optional, List
+
 app = FastAPI(title="Mergington High School API",
               description="API for viewing and signing up for extracurricular activities")
 
@@ -84,8 +87,43 @@ def root():
 
 
 @app.get("/activities")
-def get_activities():
-    return activities
+def get_activities(
+    category: Optional[str] = Query(None, description="Filter by category"),
+    sort: Optional[str] = Query(None, description="Sort by 'name' or 'time'"),
+    search: Optional[str] = Query(None, description="Free text search")
+):
+    # Add a 'category' field to each activity for demonstration
+    activity_categories = {
+        "Chess Club": "Academic",
+        "Programming Class": "Academic",
+        "Gym Class": "Sports",
+        "Soccer Team": "Sports",
+        "Basketball Team": "Sports",
+        "Art Club": "Arts",
+        "Drama Club": "Arts",
+        "Math Club": "Academic",
+        "Debate Team": "Academic"
+    }
+    filtered = {}
+    for name, details in activities.items():
+        # Attach category for filtering
+        details_with_category = details.copy()
+        details_with_category["category"] = activity_categories.get(name, "Other")
+        # Filter by category
+        if category and details_with_category["category"].lower() != category.lower():
+            continue
+        # Free text search
+        if search:
+            search_lower = search.lower()
+            if search_lower not in name.lower() and search_lower not in details_with_category["description"].lower():
+                continue
+        filtered[name] = details_with_category
+    # Sort
+    if sort == "name":
+        filtered = dict(sorted(filtered.items(), key=lambda x: x[0].lower()))
+    elif sort == "time":
+        filtered = dict(sorted(filtered.items(), key=lambda x: x[1]["schedule"]))
+    return filtered
 
 
 @app.post("/activities/{activity_name}/signup")
