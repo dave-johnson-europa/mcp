@@ -4,42 +4,54 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
 
-  // Function to fetch activities from API
+  // Filters
+  const filterCategory = document.getElementById("filter-category");
+  const filterSort = document.getElementById("filter-sort");
+  const filterSearch = document.getElementById("filter-search");
+
+  // Function to fetch activities from API with filters
   async function fetchActivities() {
     try {
-      const response = await fetch("/activities");
+      let url = "/activities";
+      const params = [];
+      if (filterCategory && filterCategory.value) params.push(`category=${encodeURIComponent(filterCategory.value)}`);
+      if (filterSort && filterSort.value) params.push(`sort=${encodeURIComponent(filterSort.value)}`);
+      if (filterSearch && filterSearch.value) params.push(`search=${encodeURIComponent(filterSearch.value)}`);
+      if (params.length > 0) url += `?${params.join("&")}`;
+
+      const response = await fetch(url);
       const activities = await response.json();
 
-      // Clear loading message
+      // Clear loading message and dropdown
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
 
-        const spotsLeft =
-          details.max_participants - details.participants.length;
+        const spotsLeft = details.max_participants - details.participants.length;
 
-        // Create participants HTML with delete icons instead of bullet points
         const participantsHTML =
           details.participants.length > 0
             ? `<div class="participants-section">
-              <h5>Participants:</h5>
-              <ul class="participants-list">
-                ${details.participants
-                  .map(
-                    (email) =>
-                      `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button></li>`
-                  )
-                  .join("")}
-              </ul>
-            </div>`
+                <h5>Participants:</h5>
+                <ul class="participants-list">
+                  ${details.participants
+                    .map(
+                      (email) =>
+                        `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button></li>`
+                    )
+                    .join("")}
+                </ul>
+              </div>`
             : `<p><em>No participants yet</em></p>`;
 
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
+          <p><strong>Category:</strong> ${details.category || "Other"}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <div class="participants-container">
@@ -153,6 +165,15 @@ document.addEventListener("DOMContentLoaded", () => {
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
     }
+  });
+
+  // Filter event listeners
+  if (filterCategory) filterCategory.addEventListener("change", fetchActivities);
+  if (filterSort) filterSort.addEventListener("change", fetchActivities);
+  if (filterSearch) filterSearch.addEventListener("input", () => {
+    // Debounce search
+    clearTimeout(window._searchTimeout);
+    window._searchTimeout = setTimeout(fetchActivities, 400);
   });
 
   // Initialize app
