@@ -198,3 +198,22 @@ footer {
   padding: 20px;
   color: #666;
 }
+
+/* Filters styling */
+#activity-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+#activity-filters label {
+  font-weight: 500;
+}
+#activity-filters select,
+#activity-filters input[type="text"] {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  margin-right: 8px;
+}
